@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PGI Silos Dashboard</title>
+    <style>
+        :root {
+            --color-tech: #2563eb;
+            --color-tech-light: #dbeafe;
+            --color-hr: #7c3aed;
+            --color-hr-light: #ede9fe;
+            --color-marketing: #db2777;
+            --color-marketing-light: #fce7f3;
+            --status-active: #10b981;
+            --status-planning: #f59e0b;
+            --status-blocked: #ef4444;
+            --status-complete: #6b7280;
+            --bg: #ffffff;
+            --bg-dark: #0f172a;
+            --surface: #f9fafb;
+            --surface-dark: #1e293b;
+            --text-primary: #111827;
+            --text-primary-dark: #f1f5f9;
+            --text-secondary: #6b7280;
+            --text-secondary-dark: #cbd5e1;
+            --border: #e5e7eb;
+            --border-dark: #334155;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg: var(--bg-dark);
+                --surface: var(--surface-dark);
+                --text-primary: var(--text-primary-dark);
+                --text-secondary: var(--text-secondary-dark);
+                --border: var(--border-dark);
+            }
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+            padding: 2rem 1rem;
+            min-height: 100vh;
+            color: var(--text-primary);
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 2.5rem;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+            color: var(--text-primary);
+            font-weight: 700;
+        }
+
+        .header p {
+            color: var(--text-secondary);
+            font-size: 1rem;
+            margin-bottom: 0;
+        }
+
+        .stats-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2.5rem;
+        }
+
+        .stat-card {
+            background: var(--bg);
+            padding: 1.5rem;
+            border-radius: 12px;
+            border-left: 4px solid;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .stat-card.active {
+            border-left-color: var(--status-active);
+        }
+
+        .stat-card.planning {
+            border-left-color: var(--status-planning);
+        }
+
+        .stat-label {
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .silos-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .silo {
+            background: var(--bg);
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .silo:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        .silo-header {
+            padding: 1.5rem;
+            color: white;
+            font-size: 1.5rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .silo-header.tech {
+            background: var(--color-tech);
+        }
+
+        .silo-header.hr {
+            background: var(--color-hr);
+        }
+
+        .silo-header.marketing {
+            background: var(--color-marketing);
+        }
+
+        .silo-icon {
+            font-size: 1.75rem;
+            width: 2.5rem;
+            height: 2.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255,255,255,0.2);
+            border-radius: 8px;
+        }
+
+        .silo-content {
+            padding: 1.5rem;
+        }
+
+        .branch {
+            margin-bottom: 1.5rem;
+            padding: 1.25rem;
+            background: var(--surface);
+            border-radius: 10px;
+            border-left: 4px solid;
+            transition: background 0.2s, box-shadow 0.2s;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .branch.tech {
+            border-left-color: var(--color-tech);
+        }
+
+        .branch.hr {
+            border-left-color: var(--color-hr);
+        }
+
+        .branch.marketing {
+            border-left-color: var(--color-marketing);
+        }
+
+        .branch:hover {
+            background: var(--bg);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+
+        .branch-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 0.75rem;
+        }
+
+        .branch-title {
+            font-weight: 600;
+            color: var(--text-primary);
+            font-size: 1rem;
+            margin: 0;
+        }
+
+        .branch-status {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .branch-meta {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            font-size: 0.85rem;
+            margin: 0.75rem 0;
+            padding: 0.75rem 0;
+            border-top: 1px solid var(--border);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .meta-item {
+            display: flex;
+            flex-direction: column;
+            gap: 0.2rem;
+        }
+
+        .meta-label {
+            color: var(--text-secondary);
+            font-size: 0.75rem;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+
+        .meta-value {
+            color: var(--text-primary);
+            font-weight: 500;
+        }
+
+        .blocker {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            padding: 0.6rem 0.8rem;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            color: var(--status-blocked);
+            margin-top: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .blocker-icon {
+            font-size: 1rem;
+        }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            padding: 0.4rem 0.8rem;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            cursor: pointer;
+            border: none;
+            transition: transform 0.2s;
+        }
+
+        .status-badge:hover {
+            transform: scale(1.05);
+        }
+
+        .status-badge.active {
+            background: var(--status-active);
+            color: white;
+        }
+
+        .status-badge.planning {
+            background: var(--status-planning);
+            color: white;
+        }
+
+        .status-badge.blocked {
+            background: var(--status-blocked);
+            color: white;
+        }
+
+        .status-badge.complete {
+            background: var(--status-complete);
+            color: white;
+        }
+
+        .progress-bar {
+            height: 6px;
+            background: var(--border);
+            border-radius: 3px;
+            overflow: hidden;
+            margin-top: 0.5rem;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--color-tech), var(--color-tech));
+            transition: width 0.3s ease;
+        }
+
+        .branch.hr .progress-fill {
+            background: linear-gradient(90deg, var(--color-hr), var(--color-hr));
+        }
+
+        .branch.marketing .progress-fill {
+            background: linear-gradient(90deg, var(--color-marketing), var(--color-marketing));
+        }
+
+        .legend {
+            background: var(--bg);
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            margin-top: 2rem;
+        }
+
+        .legend h3 {
+            margin-bottom: 1.25rem;
+            color: var(--text-primary);
+            font-size: 1.1rem;
+        }
+
+        .legend-section {
+            margin-bottom: 1.5rem;
+        }
+
+        .legend-section:last-child {
+            margin-bottom: 0;
+        }
+
+        .legend-section-title {
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 0.75rem;
+        }
+
+        .legend-items {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .legend-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 3px;
+            flex-shrink: 0;
+        }
+
+        .legend-dot.active {
+            background: var(--status-active);
+        }
+
+        .legend-dot.planning {
+            background: var(--status-planning);
+        }
+
+        .legend-dot.blocked {
+            background: var(--status-blocked);
+        }
+
+        .legend-dot.complete {
+            background: var(--status-complete);
+        }
+
+        .note {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            margin-top: 0.5rem;
+        }
+
+        .help-text {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            line-height: 1.6;
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid var(--border);
+        }
+
+        .help-text strong {
+            color: var(--text-primary);
+        }
+
+        @media (max-width: 768px) {
+            .silos-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .header h1 {
+                font-size: 1.75rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📊 PGI Silos Dashboard</h1>
+            <p>Real-time view of major priorities and project status</p>
+        </div>
+
+        <div class="stats-row">
+            <div class="stat-card active">
+                <div class="stat-label">Projects In Progress</div>
+                <div class="stat-value">4</div>
+            </div>
+            <div class="stat-card planning">
+                <div class="stat-label">In Planning / Not Started</div>
+                <div class="stat-value">2</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Overall Completion</div>
+                <div class="stat-value">35%</div>
+            </div>
+        </div>
+
+        <div class="silos-grid">
+            <!-- TECHNOLOGY SILO -->
+            <div class="silo">
+                <div class="silo-header tech">
+                    <div class="silo-icon">💻</div>
+                    <span>Technology</span>
+                </div>
+                <div class="silo-content">
+                    <div class="branch tech">
+                        <div class="branch-header">
+                            <h3 class="branch-title">Digital Evaluations</h3>
+                        </div>
+                        <div class="branch-status">
+                            <button class="status-badge active" onclick="toggleStatus(this, 'active', 'planning')">● Active</button>
+                        </div>
+                        <div class="branch-meta">
+                            <div class="meta-item">
+                                <div class="meta-label">Owner</div>
+                                <div class="meta-value">Jason Meisch</div>
+                            </div>
+                            <div class="meta-item">
+                                <div class="meta-label">Target</div>
+                                <div class="meta-value">Dec 2026</div>
+                            </div>
+                        </div>
+                        <div class="note">3D capture, force plates, ball flight integration</div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: 65%"></div>
+                        </div>
+                    </div>
+
+                    <div class="branch tech">
+                        <div class="branch-header">
+                            <h3 class="branch-title">Mental Assessments</h3>
+                        </div>
+                        <div class="branch-status">
+                            <button class="status-badge active" onclick="toggleStatus(this, 'active', 'planning')">● Active</button>
+                        </div>
+                        <div class="branch-meta">
+                            <div class="meta-item">
+                                <div class="meta-label">Owner</div>
+                                <div class="meta-value">Ramsey Williams</div>
+                            </div>
+                            <div class="meta-item">
+                                <div class="meta-label">Target</div>
+                                <div class="meta-value">Nov 2026</div>
+                            </div>
+                        </div>
+                        <div class="note">Client-facing assessment platform, PDF sign-off workflow</div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: 45%"></div>
+                        </div>
+                        <div class="blocker">
+                            <span class="blocker-icon">⚠️</span>
+                            <span>PDF sign-off workflow TBD</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- HR SILO -->
+            <div class="silo">
+                <div class="silo-header hr">
+                    <div class="silo-icon">👥</div>
+                    <span>HR & Talent</span>
+                </div>
+                <div class="silo-content">
+                    <div class="branch hr">
+                        <div class="branch-header">
+                            <h3 class="branch-title">Talent Hub</h3>
+                        </div>
+                        <div class="branch-status">
+                            <button class="status-badge planning" onclick="toggleStatus(this, 'planning', 'active')">⏱ Planning</button>
+                        </div>
+                        <div class="branch-meta">
+                            <div class="meta-item">
+                                <div class="meta-label">Owner</div>
+                                <div class="meta-value">Ramsey Williams</div>
+                            </div>
+                            <div class="meta-item">
+                                <div class="meta-label">Target</div>
+                                <div class="meta-value">Q1 2027</div>
+                            </div>
+                        </div>
+                        <div class="note">Hiring workflow, past/present/future candidate tracking</div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: 20%"></div>
+                        </div>
+                    </div>
+
+                    <div class="branch hr">
+                        <div class="branch-header">
+                            <h3 class="branch-title">CPC Training Build</h3>
+                        </div>
+                        <div class="branch-status">
+                            <button class="status-badge planning" onclick="toggleStatus(this, 'planning', 'active')">⏱ Planning</button>
+                        </div>
+                        <div class="branch-meta">
+                            <div class="meta-item">
+                                <div class="meta-label">Owner</div>
+                                <div class="meta-value">TBD</div>
+                            </div>
+                            <div class="meta-item">
+                                <div class="meta-label">Target</div>
+                                <div class="meta-value">Q2 2027</div>
+                            </div>
+                        </div>
+                        <div class="note">Certification program and training modules</div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: 10%"></div>
+                        </div>
+                        <div class="blocker">
+                            <span class="blocker-icon">⚠️</span>
+                            <span>Awaiting curriculum scope definition</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- MARKETING SILO -->
+            <div class="silo">
+                <div class="silo-header marketing">
+                    <div class="silo-icon">📢</div>
+                    <span>Marketing</span>
+                </div>
+                <div class="silo-content">
+                    <div class="branch marketing">
+                        <div class="branch-header">
+                            <h3 class="branch-title">Flyers (Caddy)</h3>
+                        </div>
+                        <div class="branch-status">
+                            <button class="status-badge active" onclick="toggleStatus(this, 'active', 'planning')">● Active</button>
+                        </div>
+                        <div class="branch-meta">
+                            <div class="meta-item">
+                                <div class="meta-label">Owner</div>
+                                <div class="meta-value">Marketing Agent</div>
+                            </div>
+                            <div class="meta-item">
+                                <div class="meta-label">Target</div>
+                                <div class="meta-value">Oct 2026</div>
+                            </div>
+                        </div>
+                        <div class="note">Golf flyer generator agent with branding system & Google Drive workflow</div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: 55%"></div>
+                        </div>
+                    </div>
+
+                    <div class="branch marketing">
+                        <div class="branch-header">
+                            <h3 class="branch-title">Website Upgrades</h3>
+                        </div>
+                        <div class="branch-status">
+                            <button class="status-badge planning" onclick="toggleStatus(this, 'planning', 'active')">⏱ Planning</button>
+                        </div>
+                        <div class="branch-meta">
+                            <div class="meta-item">
+                                <div class="meta-label">Owner</div>
+                                <div class="meta-value">Ramsey Williams</div>
+                            </div>
+                            <div class="meta-item">
+                                <div class="meta-label">Target</div>
+                                <div class="meta-value">Jan 2027</div>
+                            </div>
+                        </div>
+                        <div class="note">Web updates, additions, and design improvements</div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: 25%"></div>
+                        </div>
+                        <div class="blocker">
+                            <span class="blocker-icon">⚠️</span>
+                            <span>Design direction in progress</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="legend">
+            <h3>📖 How to Use This Dashboard</h3>
+
+            <div class="legend-section">
+                <div class="legend-section-title">Project Status</div>
+                <div class="legend-items">
+                    <div class="legend-item">
+                        <div class="legend-dot active"></div>
+                        <span>Active / In Progress</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-dot planning"></div>
+                        <span>Planning / Not Started</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-dot blocked"></div>
+                        <span>Blocked / On Hold</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-dot complete"></div>
+                        <span>Complete</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="help-text">
+                <strong>💡 Quick Tips:</strong><br>
+                • <strong>Click status badges</strong> to cycle through status states<br>
+                • <strong>Progress bars</strong> show relative completion for each project<br>
+                • <strong>Target dates</strong> show planned completion<br>
+                • <strong>Blockers</strong> highlight what's preventing progress<br>
+                • <strong>Owner</strong> shows who's responsible for the project<br>
+                <br>
+                🔄 <strong>Refresh this page</strong> to see latest updates or bookmark for quick access
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function toggleStatus(element, currentStatus, nextStatus) {
+            const statuses = ['active', 'planning', 'blocked', 'complete'];
+            const statusEmojis = { active: '●', planning: '⏱', blocked: '⛔', complete: '✓' };
+            const statusLabels = { active: 'Active', planning: 'Planning', blocked: 'Blocked', complete: 'Complete' };
+
+            let currentIndex = statuses.indexOf(currentStatus);
+            let nextIndex = (currentIndex + 1) % statuses.length;
+            let nextStat = statuses[nextIndex];
+
+            element.classList.remove(...statuses);
+            element.classList.add(nextStat);
+            element.textContent = statusEmojis[nextStat] + ' ' + statusLabels[nextStat];
+        }
+    </script>
+</body>
+</html>
